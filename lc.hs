@@ -1,6 +1,6 @@
 import Data.Set
 
-data Node = Abstr Char Node | App Node Node | Var Char | Error
+data Node = Abstr Char Node | App Node Node | Var Char
 
 alphabet = fromList "abcdefghijklmnopqrstuvwxyz"
 
@@ -8,37 +8,42 @@ pretty_print:: Node -> String
 pretty_print (Abstr x n) = "(\\" ++ [x] ++ "." ++ pretty_print n ++ ")"
 pretty_print (App m n)   = "(" ++ pretty_print m ++ "" ++ pretty_print n ++ ")"
 pretty_print (Var x)     = [x]
-pretty_print Error       = "Syntax Error."
 
 -- Parse a lambda-term.
 -- Return value: the AST and the rest of the string if it is unfinished.
-parse:: String -> (Node, String)
-parse str = let (term, rest) = parse_one str in parse_app term rest
+parse:: String -> Maybe (Node, String)
+parse str = do
+  (term, rest) <- parse_one str
+  parse_app term rest
 
 -- Parse an application (MN), or a single term M if it has no argument.
 -- To handle left-associativity, the result is stored in an accumulator.
-parse_app:: Node -> String -> (Node, String)
+parse_app:: Node -> String -> Maybe (Node, String)
 parse_app res prog = case prog of
-  "" -> (res, "")
-  (')':tail) -> (res, ')':tail)
-  str -> let (term, rest) = parse_one str in parse_app (App res term) rest
+  "" -> Just (res, "")
+  (')':tail) -> Just (res, ')':tail)
+  str -> do
+    (term, rest) <- parse_one str
+    parse_app (App res term) rest
 
--- Parse an abstraction or a variable.
-parse_one:: String -> (Node, String)
-parse_one []          = (Error, "")
-parse_one ('(':tail)  = let (term, rest) = parse tail in case rest of
-  (')':tail) -> (term, tail)
-  _ -> (Error, "")
-parse_one ('\\':x:'.':tail) =
-  let (body, rest) = parse tail in (Abstr x body, rest)
-parse_one (x:tail)    = ((Var x), tail)
+-- Parse an abstraction, a variable or a parenthesized expression.
+parse_one:: String -> Maybe (Node, String)
+parse_one []          = Nothing
+parse_one ('(':tail)  = do
+  (term, rest) <- parse tail
+  case rest of
+    (')':tail) -> Just (term, tail)
+    _ -> Nothing
+parse_one ('\\':x:'.':tail) = do
+  (body, rest) <- parse tail
+  return (Abstr x body, rest)
+parse_one (x:tail)    = Just ((Var x), tail)
 
 -- Free variables of a term.
 fv:: Node -> Set Char
 fv (Var x) = singleton x
 fv (App m n) = fv m `union` fv n
 fv (Abstr x m) = delete x (fv m)
-fv Error = empty
 
 -- Substitution:
 subst:: Node -> Char -> Node -> Node
@@ -55,7 +60,6 @@ subst m x (Abstr y n) | elem y (fv m) =
     subst m x (Abstr z (subst (Var z) y n))
 --             = \y.[M/x]N if x /= y and y is not a free variable of M
 subst m x (Abstr y n)                 = Abstr y (subst m x n)
-subst _ _ Error                       = Error
 
 eval:: Node -> Node
 eval (App m n)   = case (eval m) of
@@ -64,7 +68,10 @@ eval (App m n)   = case (eval m) of
 eval (Abstr x e) = Abstr x (eval e)
 eval e           = e
 
+eval_print_maybe (Just (ast, _)) = pretty_print (eval ast)
+eval_print_maybe Nothing = ""
+
 main = do
   prog <- getLine
-  putStrLn $ pretty_print $ eval $ fst $ parse prog
+  putStrLn $ eval_print_maybe $ parse $ prog
   main
