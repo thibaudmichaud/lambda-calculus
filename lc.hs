@@ -2,6 +2,7 @@ import Data.Set
 
 data Node = Abstr Char Node | App Node Node | Var Char
 
+alphabet:: Set Char
 alphabet = fromList ['a'..'z']
 
 pretty_print:: Node -> String
@@ -13,7 +14,7 @@ pretty_print (Var x)     = [x]
 -- Return value: the AST and the rest of the string if it is unfinished.
 parse:: String -> Maybe (Node, String)
 parse str = do
-  (term, rest) <- parse_one str
+  (term, rest) <- parse_atomic str
   parse_app term rest
 
 -- Parse an application (MN), or a single term M if it has no argument.
@@ -23,24 +24,24 @@ parse_app res prog = case prog of
   "" -> Just (res, "")
   (')':tail) -> Just (res, ')':tail)
   str -> do
-    (term, rest) <- parse_one str
+    (term, rest) <- parse_atomic str
     parse_app (App res term) rest
 
 -- Parse an abstraction, a variable or a parenthesized expression.
-parse_one:: String -> Maybe (Node, String)
-parse_one []                = Nothing
-parse_one (')':_)           = Nothing
-parse_one ('(':tail)        = do
+parse_atomic:: String -> Maybe (Node, String)
+parse_atomic []                = Nothing
+parse_atomic (')':_)           = Nothing
+parse_atomic ('(':tail)        = do
   (term, rest) <- parse tail
   case rest of
     (')':tail) -> Just (term, tail)
     _ -> Nothing
-parse_one ('\\':x:'.':tail) = do
+parse_atomic ('\\':x:'.':tail) = do
   (body, rest) <- parse tail
   return (Abstr x body, rest)
-parse_one ('\\':_)          = Nothing
-parse_one ('.':_)           = Nothing
-parse_one (x:tail)          = Just ((Var x), tail)
+parse_atomic ('\\':_)          = Nothing
+parse_atomic ('.':_)           = Nothing
+parse_atomic (x:tail)          = Just ((Var x), tail)
 
 -- Free variables of a term.
 fv:: Node -> Set Char
@@ -72,6 +73,7 @@ eval (App m n)   = case (eval m) of
 eval (Abstr x e) = Abstr x (eval e)
 eval e           = e
 
+eval_print_maybe:: Maybe (Node, String) -> String
 eval_print_maybe (Just (ast, "")) = pretty_print (eval ast)
 eval_print_maybe (Just (_, rest)) = "Trailing character(s): " ++ rest
 eval_print_maybe Nothing          = "Syntax Error."
