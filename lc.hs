@@ -2,7 +2,7 @@ import Data.Set
 
 data Node = Abstr Char Node | App Node Node | Var Char
 
-alphabet = fromList "abcdefghijklmnopqrstuvwxyz"
+alphabet = fromList ['a'..'z']
 
 pretty_print:: Node -> String
 pretty_print (Abstr x n) = "(\\" ++ [x] ++ "." ++ pretty_print n ++ ")"
@@ -28,8 +28,9 @@ parse_app res prog = case prog of
 
 -- Parse an abstraction, a variable or a parenthesized expression.
 parse_one:: String -> Maybe (Node, String)
-parse_one []          = Nothing
-parse_one ('(':tail)  = do
+parse_one []                = Nothing
+parse_one (')':_)           = Nothing
+parse_one ('(':tail)        = do
   (term, rest) <- parse tail
   case rest of
     (')':tail) -> Just (term, tail)
@@ -37,12 +38,12 @@ parse_one ('(':tail)  = do
 parse_one ('\\':x:'.':tail) = do
   (body, rest) <- parse tail
   return (Abstr x body, rest)
-parse_one (x:tail)    = Just ((Var x), tail)
+parse_one (x:tail)          = Just ((Var x), tail)
 
 -- Free variables of a term.
 fv:: Node -> Set Char
-fv (Var x) = singleton x
-fv (App m n) = fv m `union` fv n
+fv (Var x)     = singleton x
+fv (App m n)   = fv m `union` fv n
 fv (Abstr x m) = delete x (fv m)
 
 -- Substitution:
@@ -69,8 +70,9 @@ eval (App m n)   = case (eval m) of
 eval (Abstr x e) = Abstr x (eval e)
 eval e           = e
 
-eval_print_maybe (Just (ast, _)) = pretty_print (eval ast)
-eval_print_maybe Nothing = ""
+eval_print_maybe (Just (ast, "")) = pretty_print (eval ast)
+eval_print_maybe (Just (_, rest)) = "Trailing character(s): " ++ rest
+eval_print_maybe Nothing          = "Syntax Error."
 
 main = do
   prog <- getLine
