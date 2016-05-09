@@ -5,7 +5,7 @@ An untyped lambda calculus interpreter in Haskell, for fun, and to learn more ab
     make
 
 ## Run examples
-    ./lc < examples
+    ./lc < tests/misc
 
 ## Run in REPL mode
     ./lc

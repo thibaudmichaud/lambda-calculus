@@ -9,8 +9,11 @@ $(BIN): $(SRC)
 	$(CC) $(CFLAGS) $^ -o $@
 
 check: $(BIN)
-	./$(BIN) < examples > out
-	diff expected out
+	./$(BIN) < tests/misc > tests/out
+	diff tests/misc-exp tests/out
+	./$(BIN) < tests/errors > tests/out
+	diff tests/errors-exp tests/out
+	$(RM) tests/out
 
 clean:
 	$(RM) *.o *.hi
