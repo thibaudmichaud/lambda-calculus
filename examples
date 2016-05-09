@@ -6,3 +6,4 @@ x(yz)
 (\x.\y.xy)y
 (\x.\y.x)ab
 (\x.\y.y)ab
+exit

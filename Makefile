@@ -1,10 +1,16 @@
 CFLAGS=-W
 CC=ghc
+BIN=lc
+SRC=lc.hs
 
-all: lc
+all: $(BIN)
 
-lc: lc.hs
-	$(CC) $(CFLAGS) $< -o $@
+$(BIN): $(SRC)
+	$(CC) $(CFLAGS) $^ -o $@
+
+check: $(BIN)
+	./$(BIN) < examples > out
+	diff expected out
 
 clean:
 	$(RM) *.o *.hi
