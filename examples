@@ -4,3 +4,5 @@ xyz
 x(yz)
 (\x.\y.\z.xz(yz))abc
 (\x.\y.xy)y
+(\x.\y.x)ab
+(\x.\y.y)ab

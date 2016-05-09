@@ -63,7 +63,8 @@ subst m x (Abstr y n)                 = Abstr y (subst m x n)
 
 eval:: Node -> Node
 eval (App m n)   = case (eval m) of
-  Abstr c e -> eval (subst (eval n) c e)
+  -- (\x.M)N = [N/x]M
+  Abstr x m -> eval (subst (eval n) x m)
   e         -> App e (eval n)
 eval (Abstr x e) = Abstr x (eval e)
 eval e           = e
@@ -73,5 +74,7 @@ eval_print_maybe Nothing = ""
 
 main = do
   prog <- getLine
-  putStrLn $ eval_print_maybe $ parse $ prog
-  main
+  if prog == "exit" || prog == "quit" then return ()
+  else do
+    putStrLn $ eval_print_maybe $ parse $ prog
+    main
