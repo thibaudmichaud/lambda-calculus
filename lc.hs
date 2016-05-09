@@ -39,6 +39,7 @@ parse_one ('\\':x:'.':tail) = do
   (body, rest) <- parse tail
   return (Abstr x body, rest)
 parse_one ('\\':_)          = Nothing
+parse_one ('.':_)           = Nothing
 parse_one (x:tail)          = Just ((Var x), tail)
 
 -- Free variables of a term.
