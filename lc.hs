@@ -22,7 +22,7 @@ parse str = do
 parse_app:: Node -> String -> Maybe (Node, String)
 parse_app res prog = case prog of
   "" -> Just (res, "")
-  (')':tail) -> Just (res, ')':tail)
+  (')':_) -> Just (res, prog)
   str -> do
     (term, rest) <- parse_atomic str
     parse_app (App res term) rest
